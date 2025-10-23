@@ -208,6 +208,21 @@ added as command line arguments to the hook. For example:
             - --summary-only
             - --zero-exit
 
+          # flask_rest_api.yml
+extends: default
+tools:
+  pylint:
+    # enable/disables specific messages useful for Flask-REST API
+    disable:
+      - R0201  # method could be a function (for resource classes)
+      - W0613  # unused argument (Flask view functions often accept args by signature)
+  pycodestyle:
+    max-line-length: 100
+  mypy:
+    ignore-missing-imports: true
+
+profile:
+  strictness: low  # since many dynamic attributes in Flask
 
 
 License
