@@ -1,231 +1,223 @@
-prospector
-==========
 
-.. image:: https://img.shields.io/pypi/v/prospector.svg
-   :target: https://pypi.python.org/pypi/prospector
-   :alt: Latest Version of Prospector
-.. image:: https://github.com/PyCQA/prospector/actions/workflows/tests.yml/badge.svg
-   :target: https://github.com/PyCQA/prospector/actions/workflows/tests.yml
-   :alt: Build Status
-.. image:: https://img.shields.io/coveralls/PyCQA/prospector.svg?style=flat
-   :target: https://coveralls.io/r/PyCQA/prospector
-   :alt: Test Coverage
-.. image:: https://readthedocs.org/projects/prospector/badge/?version=latest
-   :target: https://prospector.readthedocs.io/
-   :alt: Documentation
-
-
-About
------
-
-Prospector is a tool to analyse Python code and output information about
-errors, potential problems, convention violations and complexity.
-
-It brings together the functionality of other Python analysis tools such as
-`Pylint <https://docs.pylint.org/>`_,
-`pycodestyle <https://pycodestyle.pycqa.org/>`_,
-and `McCabe complexity <https://pypi.python.org/pypi/mccabe>`_.
-See the `Supported Tools <https://prospector.readthedocs.io/en/latest/supported_tools.html>`_
-documentation section for a complete list.
-
-The primary aim of Prospector is to be useful 'out of the box'. A common complaint of other
-Python analysis tools is that it takes a long time to filter through which errors are relevant
-or interesting to your own coding style. Prospector provides some default profiles, which
-hopefully will provide a good starting point and will be useful straight away, and adapts
-the output depending on the libraries your project uses.
-
-Installation
-------------
-
-Prospector can be installed from PyPI using ``pip`` by running the following command::
-
-    pip install prospector
-
-Optional dependencies for Prospector, such as ``pyroma`` can also be installed by running::
-
-    pip install prospector[with_pyroma]
-
-Some shells (such as ``Zsh``, the default shell of macOS Catalina) require brackets to be escaped::
-
-    pip install prospector\[with_pyroma\]
-
-For a list of all of the optional dependencies, see the optional extras section on the ReadTheDocs
-page on `Supported Tools Extras <https://prospector.readthedocs.io/en/latest/supported_tools.html#optional-extras>`_.
-
-For local development, `poetry <https://python-poetry.org/>`_ is used. Check out the code, then run::
-
-    poetry install
-
-And for extras::
-
-    poetry install -E with_everything
-
-For more detailed information on installing the tool, see the
-`installation section <https://prospector.readthedocs.io/en/latest/#installation>`_ of the tool's main page
-on ReadTheDocs.
-
-Documentation
--------------
-
-Full `documentation is available at ReadTheDocs <https://prospector.readthedocs.io>`_.
-
-Usage
------
-
-Simply run prospector from the root of your project::
-
-    prospector
-
-This will output a list of messages pointing out potential problems or errors, for example::
-
-    prospector.tools.base (prospector/tools/base.py):
-        L5:0 ToolBase: pylint - R0922
-        Abstract class is only referenced 1 times
-
-Options
-```````
-
-Run ``prospector --help`` for a full list of options and their effects.
-
-Output Format
-~~~~~~~~~~~~~
-
-The default output format of ``prospector`` is designed to be human readable. For parsing
-(for example, for reporting), you can use the ``--output-format json`` flag to get JSON-formatted
-output.
-
-Profiles
-~~~~~~~~
-
-Prospector is configurable using "profiles". These are composable YAML files with directives to
-disable or enable tools or messages. For more information, read
-`the documentation about profiles <https://prospector.readthedocs.io/en/latest/profiles.html>`_.
-
-If your code uses frameworks and libraries
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Often tools such as pylint find errors in code which is not an error, for example due to attributes of classes being
-created at run time by a library or framework used by your project.
-For example, by default, pylint will generate an error for Django models when accessing ``objects``, as the
-``objects`` attribute is not part of the ``Model`` class definition.
-
-Prospector mitigates this by providing an understanding of these frameworks to the underlying tools.
-
-Prospector will try to intuit which libraries your project uses by
-`detecting dependencies <https://github.com/landscapeio/requirements-detector>`_ and automatically turning on
-support for the requisite libraries. You can see which adaptors were run in the metadata section of the report.
-
-If Prospector does not correctly detect your project's dependencies, you can specify them manually from the commandline::
-
-    prospector --uses django celery
-
-Additionally, if Prospector is automatically detecting a library that you do not in fact use, you can turn
-off autodetection completely::
-
-    prospector --no-autodetect
-
-Note that as far as possible, these adaptors have been written as plugins or augmentations for the underlying
-tools so that they can be used without requiring Prospector. For example, the Django support is available as a pylint plugin.
-
-Strictness
-~~~~~~~~~~
-
-Prospector has a configurable 'strictness' level which will determine how harshly it searches for errors::
-
-    prospector --strictness high
-
-Possible values are ``verylow``, ``low``, ``medium``, ``high``, ``veryhigh``.
-
-Prospector does not include documentation warnings by default, but you can turn
-this on using the ``--doc-warnings`` flag.
-
-pre-commit
-----------
-
-If you'd like Prospector to be run automatically when making changes to files in your Git
-repository, you can install `pre-commit <https://pre-commit.com/>`_ and add the following
-text to your repositories' ``.pre-commit-config.yaml``:
-
-.. code-block:: yaml
-
-    repos:
-    - repo: https://github.com/PyCQA/prospector
-      rev: v1.16.1 # The version of Prospector to use, if not 'master' for latest
-      hooks:
-        - id: prospector
-
-This only installs base prospector - if you also use optional tools, for example bandit and/or mypy, then you can add
-them to the hook configuration like so:
-
-.. code-block:: yaml
-
-    repos:
-    - repo: https://github.com/PyCQA/prospector
-      rev: v1.16.1
-      hooks:
-        - id: prospector
-          additional_dependencies:
-            - ".[with_mypy,with_bandit]"
-          args: [
-            '--with-tool=mypy',
-            '--with-tool=bandit',
-            ]
-
-Additional dependencies can be `individually configured <https://prospector.landscape.io/en/master/profiles.html#individual-configuration-options>`_ in your `prospector.yml` file :
-
-.. code-block:: yaml
-
-    # https://bandit.readthedocs.io/en/latest/config.html
-    bandit:
-    options:
-        skips:
-        - B201
-        - B601
-        - B610
-        - B611
-        - B703
-
-    # https://mypy.readthedocs.io/en/stable/command_line.html
-    mypy:
-    options:
-        ignore-missing-imports: true
-
-For prospector options which affect display only - those which are not configurable using a profile - these can be
-added as command line arguments to the hook. For example:
-
-.. code-block:: yaml
-
-    repos:
-    - repo: https://github.com/PyCQA/prospector
-      rev: v1.16.1
-      hooks:
-        - id: prospector
-          additional_dependencies:
-            - ".[with_mypy,with_bandit]"
-          args:
-            - --with-tool=mypy
-            - --with-tool=bandit
-            - --summary-only
-            - --zero-exit
-
-          # flask_rest_api.yml
-extends: default
-tools:
-  pylint:
-    # enable/disables specific messages useful for Flask-REST API
-    disable:
-      - R0201  # method could be a function (for resource classes)
-      - W0613  # unused argument (Flask view functions often accept args by signature)
-  pycodestyle:
-    max-line-length: 100
-  mypy:
-    ignore-missing-imports: true
-
-profile:
-  strictness: low  # since many dynamic attributes in Flask
-
-
-License
--------
-
-Prospector is available under the GPLv2 License.
+<!-- index.html (minimal skeleton) -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Project Landing</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <h1 class="brand">Prospector <span class="muted">— Quality for Python</span></h1>
+      <nav class="nav">
+        <a href="#">Docs</a>
+        <a href="#">Profiles</a>
+        <a href="#">Contribute</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h2 class="hero-title">Static analysis, simplified</h2>
+        <p class="hero-sub">Run multiple linters and formatters in one go. Configure with profiles and get meaningful reports.</p>
+        <div class="hero-cta">
+          <a class="btn primary" href="#">Get Started</a>
+          <a class="btn outline" href="#">View Docs</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="features container">
+      <article class="card">
+        <h3>Profiles</h3>
+        <p>Prebuilt profiles for frameworks and styles so you get useful results immediately.</p>
+      </article>
+      <article class="card">
+        <h3>Plugins</h3>
+        <p>Easily enable additional tools like mypy or bandit as optional extras.</p>
+      </article>
+      <article class="card">
+        <h3>CI Friendly</h3>
+        <p>Integrates with pre-commit and CI pipelines for automated checks.</p>
+      </article>
+    </section>
+
+    <section class="container code-sample">
+      <h3>Example</h3>
+      <pre><code>prospector --profile flask_rest_api --output-format json</code></pre>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <small>© 2025 Prospector — Contribute on GitHub</small>
+    </div>
+  </footer>
+</body>
+</html>
+/* styles.css - modern, responsive styles for a project page */
+
+/* ---------- Variables & Reset ---------- */
+:root{
+  --bg: #0f1724;            /* dark background for hero */
+  --card-bg: #ffffff;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --accent-2: #06b6d4;
+  --text: #0b1220;
+  --glass: rgba(255,255,255,0.06);
+  --radius: 14px;
+  --container-max: 1100px;
+  --flow: 1.2rem;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(180deg,#fbfdff 0%,#f7f9fc 100%);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  line-height:1.45;
+  font-size:16px;
+}
+
+/* ---------- Utility ---------- */
+.container{
+  width:calc(100% - 2rem);
+  max-width:var(--container-max);
+  margin:0 auto;
+  padding:2rem 1rem;
+}
+
+.header-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+
+/* ---------- Header ---------- */
+.site-header{
+  position:sticky;
+  top:0;
+  z-index:40;
+  backdrop-filter: blur(6px);
+  background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.55));
+  border-bottom:1px solid rgba(11,18,32,0.06);
+}
+.brand{
+  margin:0;
+  font-size:1.15rem;
+  letter-spacing:0.2px;
+  color:var(--text);
+}
+.brand .muted{color:var(--muted);font-weight:600;margin-left:8px;font-size:0.9rem}
+
+.nav a{
+  text-decoration:none;
+  color:var(--text);
+  padding:8px 12px;
+  border-radius:8px;
+  font-weight:600;
+  opacity:0.9;
+}
+.nav a:hover{background:var(--glass)}
+
+/* ---------- Hero ---------- */
+.hero{
+  background: linear-gradient(180deg, var(--bg), #0b1220);
+  color:white;
+  padding:4.5rem 0;
+  border-bottom-left-radius:36px;
+  border-bottom-right-radius:36px;
+  box-shadow: 0 8px 40px rgba(2,6,23,0.4);
+}
+.hero .container{display:flex;flex-direction:column;align-items:flex-start;gap:1rem}
+.hero-title{
+  margin:0 0 0.25rem 0;
+  font-size:2rem;
+  line-height:1.04;
+  font-weight:700;
+}
+.hero-sub{margin:0 0 1rem 0;color:rgba(255,255,255,0.88);max-width:60ch}
+
+.hero-cta{display:flex;gap:0.75rem;align-items:center}
+.btn{
+  display:inline-block;
+  padding:0.55rem 1rem;
+  border-radius:12px;
+  text-decoration:none;
+  font-weight:700;
+  font-size:0.95rem;
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+.btn:active{transform:translateY(1px)}
+.btn.primary{
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  color:#fff;
+  box-shadow: 0 6px 18px rgba(37,99,235,0.18);
+}
+.btn.outline{
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.12);
+  color:rgba(255,255,255,0.95);
+}
+
+/* ---------- Features grid ---------- */
+.features{
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:1.25rem;
+  margin-top:-2.5rem; /* lift cards up into hero */
+  position:relative;
+  z-index:30;
+}
+.card{
+  background:var(--card-bg);
+  border-radius:14px;
+  padding:1.25rem;
+  box-shadow: 0 8px 30px rgba(11,18,32,0.06);
+  transition:transform .14s ease, box-shadow .14s ease;
+}
+.card:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(11,18,32,0.08)}
+.card h3{margin:0 0 0.5rem 0}
+.card p{margin:0;color:var(--muted)}
+
+/* ---------- Code sample ---------- */
+.code-sample pre{
+  background:#0b1220;
+  color:#e6eef8;
+  padding:1rem;
+  border-radius:10px;
+  overflow:auto;
+  box-shadow: 0 6px 24px rgba(2,6,23,0.28);
+  margin-top:0.75rem;
+  border:1px solid rgba(255,255,255,0.04);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+  font-size:0.95rem;
+}
+
+/* ---------- Footer ---------- */
+.site-footer{
+  padding:1.5rem 0;
+  color:var(--muted);
+  border-top:1px solid rgba(11,18,32,0.04);
+  background:transparent;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width:900px){
+  .features{grid-template-columns:repeat(2,1fr)}
+  .hero-title{font-size:1.6rem}
+  .hero-sub{max-width:44ch}
+}
+@media (max-width:600px){
+  .header-inner{flex-direction:column;align-items:flex-start;gap:0.5rem;padding:0.75rem 0}
+  .features{grid-template-columns: 1fr}
+  .hero{padding:3rem 0;border-radius:0 0 20px 20px}
+  .hero .container{align-items:flex-start}
+  .nav{display:flex;gap:0.5rem;flex-wrap:wrap}
+}
